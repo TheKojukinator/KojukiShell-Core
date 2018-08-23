@@ -45,11 +45,19 @@ Function Enter-Script {
             # start new transcript
             Start-Transcript -Path $Log -Append *> $null
             # create a global timer variable to keep track of script execution time
-            if (Get-Variable -Name _ScriptTimer -Scope Global -ErrorAction SilentlyContinue) {
-                Remove-Variable _ScriptTimer -Scope Global -ErrorAction SilentlyContinue
+            if (Get-Variable -Name _KojukiShell_ScriptTimer -Scope Global -ErrorAction SilentlyContinue) {
+                Remove-Variable _KojukiShell_ScriptTimer -Scope Global -ErrorAction SilentlyContinue
             } else {
-                New-Variable -Name _ScriptTimer -Value ([System.Diagnostics.Stopwatch]::StartNew()) -Scope Global
+                New-Variable -Name _KojukiShell_ScriptTimer -Value ([System.Diagnostics.Stopwatch]::StartNew()) -Scope Global
             }
+            # create a global variable to keep the old $ErrorActionPreference
+            if (Get-Variable -Name _KojukiShell_ErrorActionPreference -Scope Global -ErrorAction SilentlyContinue) {
+                Remove-Variable _KojukiShell_ErrorActionPreference -Scope Global -ErrorAction SilentlyContinue
+            } else {
+                New-Variable -Name _KojukiShell_ErrorActionPreference -Value $ErrorActionPreference -Scope Global
+            }
+            # set Global ErrorActionPreference to Stop
+            $Global:ErrorActionPreference = "Stop"
             # set custom window and buffer size if running in ConsoleHost
             $psHost = Get-Host
             if ($psHost.Name -eq "ConsoleHost") {

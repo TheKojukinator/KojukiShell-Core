@@ -21,9 +21,14 @@ Function Exit-Script {
     Process {
         try {
             # use the global script timer here and clean it up
-            if (Get-Variable -Name _ScriptTimer -Scope Global -ErrorAction SilentlyContinue) {
-                Write-Host "Script finished in $($_ScriptTimer.Elapsed.TotalSeconds) seconds."
-                Remove-Variable _ScriptTimer -Scope Global -ErrorAction SilentlyContinue
+            if (Get-Variable -Name _KojukiShell_ScriptTimer -Scope Global -ErrorAction SilentlyContinue) {
+                Write-Host "Script finished in $($_KojukiShell_ScriptTimer.Elapsed.TotalSeconds) seconds."
+                Remove-Variable _KojukiShell_ScriptTimer -Scope Global -ErrorAction SilentlyContinue
+            }
+            # set Global ErrorActionPreference back and cleanup the global variable
+            if (Get-Variable -Name _KojukiShell_ErrorActionPreference -Scope Global -ErrorAction SilentlyContinue) {
+                $Global:ErrorActionPreference = $_KojukiShell_ErrorActionPreference
+                Remove-Variable _KojukiShell_ErrorActionPreference -Scope Global -ErrorAction SilentlyContinue
             }
             # stop transcribing, wrapped in try/catch because "Stop-Transcript -ErrorAction SilentlyContinue" doesn't work for some reason
             try { Stop-Transcript *> $null } catch {}
