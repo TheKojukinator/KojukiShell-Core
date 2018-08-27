@@ -67,10 +67,10 @@ Function Enter-Script {
                 $psWindow = $psHost.UI.RawUI
                 $bufferSize = $psWindow.BufferSize
                 $windowSize = $psWindow.WindowSize
-                $bufferSize.Width = [System.Math]::Max(256, $psWindow.MaxWindowSize.Width)
+                $bufferSize.Width = $psWindow.MaxPhysicalWindowSize.Width
                 $bufferSize.Height = 3000
                 $psWindow.BufferSize = $bufferSize
-                $windowSize.Width = $psWindow.MaxWindowSize.Width
+                $windowSize.Width = $psWindow.MaxPhysicalWindowSize.Width
                 $psWindow.WindowSize = $windowSize
             }
         } catch {
