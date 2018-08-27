@@ -19,7 +19,7 @@ Function Clear-Cache {
     Clear-Cache WebCache
 
     .EXAMPLE
-    Clear-Cache All -AllUsers -Verbose
+    Clear-Cache All -AllUsers
     #>
     [CmdletBinding()]
     Param(
@@ -40,7 +40,7 @@ Function Clear-Cache {
             }
             # process the profile(s)
             foreach ($prof in $profiles) {
-                Write-Verbose "Clear-Cache | Processing [$Type] in [$prof]"
+                Write-Information "Clear-Cache : Processing [$Type] in [$prof]"
                 # define the paths to the selected cache(s)
                 switch ($Type) {
                     "INetCache" {
@@ -58,12 +58,12 @@ Function Clear-Cache {
                         )
                         break
                     }
-                    default { throw "Unexpected value in Type: $Type"; break }
+                    default { throw "Unexpected value in Type [$Type]"; break }
                 }
                 foreach ($item in $paths) {
                     # if the path exists, process it
                     if (Test-Path $item -ErrorAction Ignore) {
-                        Write-Verbose "Clear-Cache | Deleting [$item]"
+                        Write-Information "Clear-Cache : Deleting [$item]"
                         # start a loop for retries
                         while ($true) {
                             # attempt to delete the path
@@ -74,26 +74,26 @@ Function Clear-Cache {
                                 # an IOException is highly likely to happen because a file is in use, handle that here
                                 # get the locked file path from the exception
                                 $badPath = $PSItem.TargetObject.FullName
-                                Write-Verbose "Clear-Cache | IOException deleting [$badPath]"
-                                Write-Verbose "Clear-Cache | Attempting to identify the locking process and stop it"
+                                Write-Information "Clear-Cache : IOException deleting [$badPath]"
+                                Write-Information "Clear-Cache : Attempting to identify the locking process and stop it"
                                 # get the process(es) locking the file
                                 $lockedProcs = Get-LockingProcs $badPath -WarningAction SilentlyContinue
                                 # quit each process
                                 foreach ($proc in $lockedProcs) {
-                                    Write-Verbose "Clear-Cache | Stopping process [$($proc.PID), $($proc.Name)] which is locking [$badPath]"
+                                    Write-Information "Clear-Cache : Stopping process [$($proc.PID), $($proc.Name)] which is locking [$badPath]"
                                     # use taskkill.exe instead of Stop-Process, to prevent process restarts
                                     & "$env:SystemRoot\System32\taskkill.exe" /f /IM $proc.FullName *> $null
                                     # sleep for 1 second, sometimes hadles stay open for a short while and re-trigger this process lock on the next iteration
                                     Start-Sleep -Seconds 1
                                 }
                                 # terminate SearchUI.exe just in case, because Get-LockingProcs doesn't detect it
-                                Write-Verbose "Clear-Cache | Stopping process [SearchUI] just in case"
+                                Write-Information "Clear-Cache : Stopping process [SearchUI] just in case"
                                 & "$env:SystemRoot\System32\taskkill.exe" /f /IM "SearchUI.exe" *> $null
                             } catch [System.UnauthorizedAccessException] {
                                 # an UnauthorizedAccessException is highly likely to happen because we don't have access to the path
                                 $badPath = $PSItem.TargetObject
-                                Write-Verbose "Clear-Cache | UnauthorizedAccessException deleting [$badPath]"
-                                Write-Verbose "Clear-Cache | Attempting to Nuke the ACLs"
+                                Write-Information "Clear-Cache : UnauthorizedAccessException deleting [$badPath]"
+                                Write-Information "Clear-Cache : Attempting to Nuke the ACLs"
                                 # nuke the ACLs
                                 Use-SetACL $badPath -Nuke
                             } catch {
@@ -104,7 +104,7 @@ Function Clear-Cache {
                     }
                     # confirm that the path is indeed gone, if not then throw an error
                     if (Test-Path $item -ErrorAction Ignore) {
-                        throw "Unexpected condition, path still exists: $item"
+                        throw "Unexpected condition, path still exists [$item]"
                     }
                 }
             }
@@ -127,6 +127,7 @@ Function Clear-Cache {
         try {
             if (!(Get-Process | Where-Object ProcessName -EQ "explorer")) {
                 # if explorer isn't running, because we probably quit it, run it
+                Write-Information "Clear-Cache : Explorer is not running, starting"
                 & explorer.exe
             }
         } catch {

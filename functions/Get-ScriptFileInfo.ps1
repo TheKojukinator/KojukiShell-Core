@@ -27,7 +27,7 @@ Function Get-ScriptFileInfo {
                 return [IO.FileInfo]::new($scriptName)
             } else {
                 # if we don't have a script from the callstack, as fallback, return the FileInfo object for the non-existent "console.ps1" in the present working directory
-                Write-Warning 'Get-ScriptFileInfo | Could not determine calling script from callstack, returning fallback "$PWD\console.ps1"'
+                Write-Warning "Get-ScriptFileInfo : Could not determine calling script from callstack, returning fallback [$($PSCmdlet.CurrentProviderLocation("FileSystem").ProviderPath)\console.ps1]"
                 return [IO.FileInfo]::new("$($PSCmdlet.CurrentProviderLocation("FileSystem").ProviderPath)\console.ps1")
             }
         } catch {

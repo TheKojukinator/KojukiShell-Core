@@ -78,7 +78,7 @@ Function Use-SetACL {
             $exe = "$((Get-ScriptFileInfo).DirectoryName)\tools\SetACL (executable version)\32 bit\SetACL.exe"
             # if we can't locate the exe, attempt to get it from the web
             if (!(Test-Path $exe -ErrorAction Ignore)) {
-                Write-Verbose "Use-SetACL | SetACL not found, attempting to download"
+                Write-Information "Use-SetACL : [$exe] not found, attempting to download"
                 # make sure destination path exists
                 Confirm-Path "$((Get-ScriptFileInfo).DirectoryName)\tools"
                 # download SetACL
@@ -86,7 +86,7 @@ Function Use-SetACL {
                 Invoke-WebRequest -Uri "https://helgeklein.com/downloads/SetACL/current/SetACL%20(executable%20version).zip" -OutFile $dlFile
                 # confirm downloaded file exists, otherwise throw error
                 if (!(Test-Path $dlFile -ErrorAction Ignore)) {
-                    throw "SetACL not found and fallback download failed!"
+                    throw "[$exe] not found and fallback download failed!"
                 }
                 # extract SetACL
                 Expand-Archive -Path $dlFile -DestinationPath "$((Get-ScriptFileInfo).DirectoryName)\tools"
@@ -94,13 +94,11 @@ Function Use-SetACL {
                 Remove-Item $dlFile -Force
                 # if we still can't locate the exe, all is lost
                 if (!(Test-Path $exe -ErrorAction Ignore)) {
-                    Write-Warning "Use-SetACL | Could not find SetACL.exe in expected path:"
-                    $exe | Write-Warning
-                    throw "Can't find: $exe"
+                    throw "Can't find [$exe]"
                 }
             }
             # if we made it here, the SetACL exe has been located
-            Write-Verbose "Use-SetACL | Using SetACL found in [$exe]"
+            Write-Information "Use-SetACL : Using [$exe]"
         } catch {
             if (!$PSitem.InvocationInfo.MyCommand) {
                 $PSCmdlet.ThrowTerminatingError(
@@ -122,7 +120,7 @@ Function Use-SetACL {
             foreach ($item in $Path) {
                 # validate each item with Test-Path, provide warning if not found, otherwise process
                 if (!(Test-Path $item -ErrorAction SilentlyContinue)) {
-                    Write-Warning "Use-SetACL | [$item] could not be resolved, skipping it..."
+                    Write-Warning "Use-SetACL : [$item] could not be resolved, skipping it"
                 } else {
                     # this is a structure of action presets, they should match the ParameterSets and the $Type validation set
                     # general reference: https://helgeklein.com/setacl/documentation/command-line-version-setacl-exe/
@@ -151,8 +149,8 @@ Function Use-SetACL {
                         }
                     }
                     # execute the desired command, based on the ParameterSet and specified $Type
-                    Write-Verbose "Use-SetACL | Performing [$($PSCmdlet.ParameterSetName)] on [$Type] object [$item]"
-                    & $exe $actions."$Type"."$($PSCmdlet.ParameterSetName)" | ForEach-Object { Write-Verbose "Use-SetACL | $PSItem" }
+                    Write-Information "Use-SetACL : Performing [$($PSCmdlet.ParameterSetName)] on [$Type] object [$item]"
+                    & $exe $actions."$Type"."$($PSCmdlet.ParameterSetName)" | ForEach-Object { Write-Information "Use-SetACL : $PSItem" }
                 }
             }
         } catch {

@@ -66,10 +66,10 @@ Function Get-WebFile {
                 $i++
                 # if we are processing more than one object
                 if ($URL.Count -gt 1) {
-                    Write-Verbose "Get-WebFile | Attempting to download file ($i of $($URL.Count))...`n`tRemote:`t$item`n`tLocal:`t$Path"
+                    Write-Information "Get-WebFile : Attempting to download file ($i of $($URL.Count))...`n`tRemote:`t$item`n`tLocal:`t$Path"
                     # if we are processing just one object
                 } else {
-                    Write-Verbose "Get-WebFile | Attempting to download file...`n`tRemote:`t$item`n`tLocal:`t$Path"
+                    Write-Information "Get-WebFile : Attempting to download file...`n`tRemote:`t$item`n`tLocal:`t$Path"
                 }
                 # determine filename by splitting slashes
                 $fileName = $item.Split("/") | Select-Object -Last 1
@@ -80,11 +80,11 @@ Function Get-WebFile {
                 # if the destination file doesn't exist, or overwrite is enabled, proceed with the download
                 if (!(Test-Path $destination) -or $Overwrite) {
                     if ($Overwrite) {
-                        Write-Verbose "Get-WebFile | Overwriting..."
+                        Write-Information "Get-WebFile : Overwrite switch is set"
                     }
                     # if we are processing more than one object then setup the parent progress bar here
                     if ($URL.Count -gt 1) {
-                        Write-Progress -Activity "Download-File" -Id 0529 -Status "$i of $($URL.Count) files" -CurrentOperation $item -PercentComplete ($i / $URL.Count * 100)
+                        Write-Progress -Activity "Get-WebFile" -Id 0529 -Status "$i of $($URL.Count) files" -CurrentOperation $item -PercentComplete ($i / $URL.Count * 100)
                     }
                     # gonna use these to get transfer speeds
                     $dlTimer = [System.Diagnostics.Stopwatch]::StartNew()
@@ -115,7 +115,7 @@ Function Get-WebFile {
                             # declare the download speed to use in the loop
                             $dlSpeed = 0
                             # verbose feedback
-                            Write-Verbose "Get-WebFile | Download started..."
+                            Write-Information "Get-WebFile : Download started"
                             # keep downloading and updating the progress while there are still bytes left to read
                             while ($count -gt 0) {
                                 # calculate the transfer speed every second
@@ -129,25 +129,25 @@ Function Get-WebFile {
                                     $status = "$([System.Math]::Floor($downloadedBytes/1kb))K of $([System.Math]::Floor($fileSize/1kb))K | $("{0:N2}" -f ($dlSpeed/1KB)) KB/s | $dlTimeRemaining"
                                     # if we are processing more than one object
                                     if ($URL.Count -gt 1) {
-                                        Write-Progress -Activity "Downloading..." -Status "$status" -PercentComplete ($downloadedBytes / $fileSize * 100) -ParentId 0529
+                                        Write-Progress -Activity "Downloading" -Status "$status" -PercentComplete ($downloadedBytes / $fileSize * 100) -ParentId 0529
                                         # if we are processing just one object
                                     } else {
-                                        Write-Progress -Activity "Downloading..." -CurrentOperation "$status" -Status "$item" -PercentComplete ($downloadedBytes / $fileSize * 100)
+                                        Write-Progress -Activity "Downloading" -CurrentOperation "$status" -Status "$item" -PercentComplete ($downloadedBytes / $fileSize * 100)
                                     }
-                                    Write-Verbose "Get-WebFile | $status"
+                                    Write-Information "Get-WebFile : $status"
                                 }
                                 $fileStream.Write($buffer, 0, $count)
                                 $count = $responseStream.Read($buffer, 0, $buffer.length)
                                 $downloadedBytes += $count
                             }
-                            Write-Progress -Activity "Downloading..." -Completed
+                            Write-Progress -Activity "Downloading" -Completed
                             # perform IO cleanup
                             $fileStream.Flush()
                             $fileStream.Close()
                             $fileStream.Dispose()
                             $responseStream.Dispose()
                             # verbose feedback
-                            Write-Verbose "Get-WebFile | Download completed: $destination"
+                            Write-Information "Get-WebFile : Download completed: $destination"
                             # if all goes well break out of the loop
                             break
                         } catch {
@@ -168,16 +168,16 @@ Function Get-WebFile {
                             # cleanup incomplete/corrupt destination file
                             Remove-Item $destination -Force
                             # close this progress bar just in case we used it earlier
-                            Write-Progress -Activity "Download-File" -Completed
+                            Write-Progress -Activity "Get-WebFile" -Completed
                             # rethrow the exception
                             throw
                         }
                     }
                     # close this progress bar just in case we used it earlier
-                    Write-Progress -Activity "Download-File" -Completed
+                    Write-Progress -Activity "Get-WebFile" -Completed
                     # if we got here, the destination file must already exist
                 } else {
-                    Write-Verbose "Get-WebFile | File already exists: $((Resolve-Path $destination).ProviderPath)"
+                    Write-Information "Get-WebFile : File already exists: $((Resolve-Path $destination).ProviderPath)"
                 }
             }
         } catch {

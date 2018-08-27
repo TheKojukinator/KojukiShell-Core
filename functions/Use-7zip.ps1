@@ -38,13 +38,13 @@ Function Use-7zip {
             $exe = "$(Get-ItemPropertyValue "HKLM:\SOFTWARE\7-Zip" "Path" -ErrorAction SilentlyContinue)7z.exe"
             # check if registry value was retrieved
             if ($exe -eq $null) {
-                throw "7-Zip could not be read, is it installed on this machine?"
+                throw "[HKLM:\SOFTWARE\7-Zip] could not be read, is 7-Zip installed on this machine?"
             }
             # if the tool is not located, provide feedback and throw error
             if (!(Test-Path $exe -ErrorAction SilentlyContinue)) {
-                throw "Can't find: $exe"
+                throw "Can't find [$exe]"
             } else {
-                Write-Verbose "Use-7zip | Using: $exe"
+                Write-Information "Use-7zip : Using [$exe]"
             }
             # resolve the path if it is relative
             $Path = Resolve-RelativePath $Path
@@ -71,7 +71,7 @@ Function Use-7zip {
             foreach ($item in $Archive) {
                 # resolve the path if it is relative
                 $item = Resolve-RelativePath $item
-                Write-Verbose "Extract-Archive | Extracting: $item"
+                Write-Information "Use-7zip : Extracting [$item]"
                 # call 7zip to extract and save output
                 $stdout = & $exe "x" "$item" "-o$Path" "-y" "-bse2"
                 # split output in to lines and trim spaces
@@ -95,9 +95,9 @@ Function Use-7zip {
                     # convert the hash to an object
                     $obj = [pscustomobject]$obj
                     # output the object verbose
-                    Write-Verbose "Extract-Archive | Extraction successful...$($obj | Out-String)"
+                    Write-Information "Use-7zip : Extraction successful$($obj | Out-String)"
                 } else {
-                    Write-Warning "Extract-Archive | Warning extracting: $item`n$($obj | Out-String)"
+                    Write-Warning "Use-7zip : Warning extracting [$item]`n$($obj | Out-String)"
                 }
             }
         } catch {

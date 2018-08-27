@@ -46,18 +46,18 @@ Function Get-LockingProcs {
             $exe = "$((Get-ScriptFileInfo).DirectoryName)\tools\sysinternals\handle.exe"
             # if we can't locate the exe, attempt to get it from the web
             if (!(Test-Path $exe -ErrorAction Ignore)) {
-                Write-Verbose "Get-LockingProcs | Handle.exe not found, attempting to download"
+                Write-Information "Get-LockingProcs : [$exe] not found, attempting to download"
                 # make sure destination path exists
                 Confirm-Path "$((Get-ScriptFileInfo).DirectoryName)\tools\sysinternals"
                 # download Handle
                 Invoke-WebRequest -Uri "https://live.sysinternals.com/handle.exe" -OutFile $exe
                 # if we still can't locate the exe, all is lost
                 if (!(Test-Path $exe -ErrorAction Ignore)) {
-                    throw "Can't find: $exe"
+                    throw "Can't find [$exe]"
                 }
             }
             # if we made it here, the Handle exe has been located
-            Write-Verbose "Get-LockingProcs | Using Handle found in [$exe]"
+            Write-Information "Get-LockingProcs : Using [$exe]"
         } catch {
             if (!$PSitem.InvocationInfo.MyCommand) {
                 $PSCmdlet.ThrowTerminatingError(
@@ -79,10 +79,10 @@ Function Get-LockingProcs {
             foreach ($item in $Path) {
                 # if we are processing more than one object
                 if ($Path.Count -gt 1) {
-                    Write-Verbose "Get-LockingProcs | Searching for handles to `"$item`" ($i of $($Path.Count))"
+                    Write-Information "Get-LockingProcs : Searching for handles to [$item] ($i of $($Path.Count))"
                     # if we are processing just one object
                 } else {
-                    Write-Verbose "Get-LockingProcs | Searching for handles to `"$item`""
+                    Write-Information "Get-LockingProcs : Searching for handles to [$item]"
                 }
                 # execute handle.exe and get output, pass arguments to accept license and hide banner
                 $data = & $exe -u -accepteula -nobanner $item
@@ -135,7 +135,7 @@ Function Get-LockingProcs {
                 }
                 # if lockingProcs array size is zero, we didn't find anything
                 if ($lockingProcs.Count -eq 0) {
-                    Write-Warning "Get-LockingProcs | No matching handles found"
+                    Write-Warning "Get-LockingProcs : No matching handles found"
                 }
                 # remove duplicate entries
                 $lockingProcs = $lockingProcs | Sort-Object FullName | Get-Unique -AsString

@@ -30,12 +30,12 @@ Function Uninstall-Cortana {
             }
             # process the profile(s)
             foreach ($prof in $profiles) {
-                Write-Verbose "Uninstall-Cortana | Processing [$prof]"
+                Write-Information "Uninstall-Cortana : Processing [$prof]"
                 # define the path to Cortana for this profile
                 $path = "$prof\AppData\Local\Packages\Microsoft.Windows.Cortana_cw5n1h2txyewy"
                 # if the path exists, process it
                 if (Test-Path $path -ErrorAction Ignore) {
-                    Write-Verbose "Uninstall-Cortana | Deleting [$item]"
+                    Write-Information "Uninstall-Cortana : Deleting [$item]"
                     # start a loop for retries
                     while ($true) {
                         # attempt to delete the path
@@ -46,30 +46,30 @@ Function Uninstall-Cortana {
                             # an IOException is highly likely to happen because a file is in use, handle that here
                             # get the locked file path from the exception
                             $badPath = $PSItem.TargetObject.FullName
-                            Write-Verbose "Uninstall-Cortana | IOException deleting [$badPath]"
-                            Write-Verbose "Uninstall-Cortana | Attempting to identify the locking process and stop it"
+                            Write-Information "Uninstall-Cortana : IOException deleting [$badPath]"
+                            Write-Information "Uninstall-Cortana : Attempting to identify the locking process and stop it"
                             # get the process(es) locking the file
                             $lockedProcs = Get-LockingProcs $badPath -WarningAction SilentlyContinue
                             # quit each process
                             foreach ($proc in $lockedProcs) {
-                                Write-Verbose "Uninstall-Cortana | Stopping process [$($proc.PID), $($proc.Name)] which is locking [$badPath]"
+                                Write-Information "Uninstall-Cortana : Stopping process [$($proc.PID), $($proc.Name)] which is locking [$badPath]"
                                 # use taskkill.exe instead of Stop-Process, to prevent process restarts
                                 & "$env:SystemRoot\System32\taskkill.exe" /f /IM $proc.FullName *> $null
                                 # sleep for 1 second, sometimes hadles stay open for a short while and re-trigger this process lock on the next iteration
                                 Start-Sleep -Seconds 1
                             }
                             # terminate SearchUI.exe just in case, because Get-LockingProcs doesn't detect it
-                            Write-Verbose "Uninstall-Cortana | Stopping process [SearchUI] just in case"
+                            Write-Information "Uninstall-Cortana : Stopping process [SearchUI] just in case"
                             & "$env:SystemRoot\System32\taskkill.exe" /f /IM "SearchUI.exe" *> $null
                         } catch [System.UnauthorizedAccessException] {
                             # an UnauthorizedAccessException is highly likely to happen because we don't have access to the path
                             $badPath = $PSItem.TargetObject
-                            Write-Verbose "Uninstall-Cortana | UnauthorizedAccessException deleting [$badPath]"
-                            Write-Verbose "Uninstall-Cortana | Attempting to Nuke the ACLs"
+                            Write-Information "Uninstall-Cortana : UnauthorizedAccessException deleting [$badPath]"
+                            Write-Information "Uninstall-Cortana : Attempting to Nuke the ACLs"
                             # nuke the ACLs
                             Use-SetACL $badPath -Nuke
                             # terminate SearchUI.exe just in case here as well, it seems to cause this exception in win10.1803
-                            Write-Verbose "Uninstall-Cortana | Stopping process [SearchUI] just in case"
+                            Write-Information "Uninstall-Cortana : Stopping process [SearchUI] just in case"
                             & "$env:SystemRoot\System32\taskkill.exe" /f /IM "SearchUI.exe" *> $null
                         } catch {
                             # if any other exception happens during Remove-Item, re-throw it
@@ -79,7 +79,7 @@ Function Uninstall-Cortana {
                 }
                 # confirm that the path is indeed gone, if not then throw an error
                 if (Test-Path $path -ErrorAction Ignore) {
-                    throw "Path could not be completely removed: $path"
+                    throw "Path could not be completely removed [$path]"
                 }
             }
         } catch {
@@ -101,6 +101,7 @@ Function Uninstall-Cortana {
         try {
             if (!(Get-Process | Where-Object ProcessName -EQ "explorer")) {
                 # if explorer isn't running, because we probably quit it, run it
+                Write-Information "Uninstall-Cortana : Explorer is not running, starting"
                 & explorer.exe
             }
         } catch {

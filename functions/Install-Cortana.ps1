@@ -17,7 +17,7 @@ Function Install-Cortana {
             $package = Get-AppXPackage -AllUsers -Name Microsoft.Windows.Cortana | Sort-Object @{e = {[System.Version]$PSItem.Version}} | Select-Object -Last 1
             # if we found a package, try to install it
             if ($package) {
-                Write-Verbose "Install-Cortana | AppXPackage found, trying to install"
+                Write-Information "Install-Cortana : AppXPackage found, trying to install"
                 # start a loop for retries
                 while ($true) {
                     try {
@@ -26,13 +26,13 @@ Function Install-Cortana {
                         break
                     } catch {
                         Write-Error $PSitem.Exception
-                        Write-Verbose "Install-Cortana | Error detected, retrying"
+                        Write-Information "Install-Cortana : Error detected, retrying"
                         Start-Sleep -Seconds 1
                     }
                 }
             } else {
                 # no package was found
-                Write-Warning "Install-Cortana | No AppXPackage found for Cortana!"
+                Write-Warning "Install-Cortana : No AppXPackage found for Cortana!"
             }
         } catch {
             if (!$PSitem.InvocationInfo.MyCommand) {
@@ -51,6 +51,7 @@ Function Install-Cortana {
     }
     End {
         try {
+            Write-Information "Install-Cortana : Restarting Explorer"
             # restart explorer
             Stop-Process -Name explorer -Force -ErrorAction Ignore
             Start-Sleep -Seconds 1

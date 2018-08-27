@@ -58,20 +58,20 @@ Function Confirm-Path {
                     $dir = New-Object IO.DirectoryInfo $item
                     # if the directory exists
                     if ($dir.Exists) {
-                        Write-Verbose "Confirm-Path | Directory exists: $($dir.FullName)"
+                        Write-Information "Confirm-Path : Directory [$($dir.FullName)] exists"
                         # pipeline it for PassThru
                         if ($PassThru) { $dir }
                         # if the directory doesn't exist
                     } else {
-                        Write-Verbose "Confirm-Path | Creating directory: $($dir.FullName)"
+                        Write-Information "Confirm-Path : Directory [$($dir.FullName)] doesn't exist, creating"
                         # attempt to create it
                         $newDir = New-Item -Type Directory -Path $dir.FullName
                         # pipeline it for PassThru if test succeeds
                         if (Test-Path($newDir)) {
-                            Write-Verbose "Confirm-Path | Success!"
+                            Write-Information "Confirm-Path : Success!"
                             if ($PassThru) { $newDir }
                         } else {
-                            throw "Failed to create path: $($dir.FullName)"
+                            throw "Failed to create directory [$($dir.FullName)]"
                         }
                     }
                     # if there is an extension, we must treat this item as a file
@@ -80,25 +80,25 @@ Function Confirm-Path {
                     $file = New-Object IO.FileInfo $item
                     # if the file exists
                     if ($file.Exists) {
-                        Write-Verbose "Confirm-Path | File exists: $($file.FullName)"
+                        Write-Information "Confirm-Path : File [$($file.FullName)] exists"
                         # pipeline the directory for PassThru
                         if ($PassThru) { $file.Directory }
                         # if the file doesn't exist, but the directory exists
                     } elseif ($file.Directory.Exists) {
-                        Write-Verbose "Confirm-Path | Directory exists: $($file.DirectoryName)"
+                        Write-Information "Confirm-Path : Directory [$($file.DirectoryName)] exists"
                         # pipeline the directory for PassThru
                         if ($PassThru) { $file.Directory }
                         # if neither exists
                     } else {
-                        Write-Verbose "Confirm-Path | Creating directory: $($file.DirectoryName)"
+                        Write-Information "Confirm-Path : Directory [$($file.DirectoryName)] doesn't exist, creating"
                         # attempt to create the directory
                         $newDir = New-Item -Type Directory -Path $file.DirectoryName
                         # pipeline it for PassThru if test succeeds
                         if (Test-Path($newDir)) {
-                            Write-Verbose "Confirm-Path | Success!"
+                            Write-Information "Confirm-Path : Success!"
                             if ($PassThru) { $newDir }
                         } else {
-                            throw "Failed to create path: $($file.DirectoryName)"
+                            throw "Failed to create directory [$($file.DirectoryName)]"
                         }
                     }
                 }

@@ -45,22 +45,25 @@ Function Enter-Script {
             # start new transcript
             Start-Transcript -Path $Log -Append *> $null
             # create a global timer variable to keep track of script execution time
+            Write-Information "Enter-Script : Initializing script timer"
             if (Get-Variable -Name _KojukiShell_ScriptTimer -Scope Global -ErrorAction SilentlyContinue) {
                 Remove-Variable _KojukiShell_ScriptTimer -Scope Global -ErrorAction SilentlyContinue
             } else {
                 New-Variable -Name _KojukiShell_ScriptTimer -Value ([System.Diagnostics.Stopwatch]::StartNew()) -Scope Global
             }
-            # create a global variable to keep the old $ErrorActionPreference
+            # create a global variable to keep the old $Global:ErrorActionPreference
+            Write-Information "Enter-Script : Changing Global ErrorActionPreference from $($Global:ErrorActionPreference) to Stop"
             if (Get-Variable -Name _KojukiShell_ErrorActionPreference -Scope Global -ErrorAction SilentlyContinue) {
                 Remove-Variable _KojukiShell_ErrorActionPreference -Scope Global -ErrorAction SilentlyContinue
             } else {
-                New-Variable -Name _KojukiShell_ErrorActionPreference -Value $ErrorActionPreference -Scope Global
+                New-Variable -Name _KojukiShell_ErrorActionPreference -Value $Global:ErrorActionPreference -Scope Global
             }
             # set Global ErrorActionPreference to Stop
             $Global:ErrorActionPreference = "Stop"
             # set custom window and buffer size if running in ConsoleHost
             $psHost = Get-Host
             if ($psHost.Name -eq "ConsoleHost") {
+                Write-Information "Enter-Script : ConsoleHost detected, updating window and buffer size"
                 $psWindow = $psHost.UI.RawUI
                 $bufferSize = $psWindow.BufferSize
                 $windowSize = $psWindow.WindowSize
