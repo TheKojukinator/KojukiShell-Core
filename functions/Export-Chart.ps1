@@ -21,7 +21,7 @@ public class ValidateChartDataAttribute : System.Management.Automation.ValidateA
         }
     }
 }
-'@ -ReferencedAssemblies ('Microsoft.CSharp') -ErrorAction STOP -WarningAction Ignore
+'@ -ReferencedAssemblies ('Microsoft.CSharp') -ErrorAction Stop -WarningAction Ignore
 <# once classes are fully supported in PowerShell modules, below re-implementation of the above C# TypeDefinition can be utilized
 class ValidateChartDataAttribute : System.Management.Automation.ValidateArgumentsAttribute {
     [void] Validate([object]$object, [System.Management.Automation.EngineIntrinsics]$engineIntrinsics) {
@@ -88,7 +88,7 @@ Function Export-Chart {
     Export-Chart @{table = (Get-ChildItem C:\users\exa\Downloads -File | Select-Object Name, Length); name = "Sizes"; x = "Name"; y = "Length"; labelx = "File Name"; labely = "File Size"; quota = 60000000 } "charts\Testing-Export-Chart1.png" "Downloads" "Sizes of files in my Downloads folder" 1920 1080
 
     .EXAMPLE
-    Export-Chart @{table = (0..10 | ForEach-Object {[pscustomobject]@{date = (get-date).AddDays($PSItem); value = $PSItem * (get-random -Minimum 0 -Maximum 1000)}}); name = "Generated"; x = "date"; y = "value"; quota = 4000 } "charts\Testing-Export-Chart2.png" "Sample Chart" "Randomly generated values over time"
+    @{table = (0..10 | ForEach-Object {[pscustomobject]@{date = (get-date).AddDays($PSItem); value = $PSItem * (get-random -Minimum 0 -Maximum 1000)}}); name = "Generated1"; x = "date"; y = "value"; quota = 4000 }, @{table = (0..10 | ForEach-Object {[pscustomobject]@{date = (get-date).AddDays($PSItem); value = $PSItem * (get-random -Minimum 0 -Maximum 1000)}}); name = "Generated2"; x = "date"; y = "value"; quota = 4000 } | Export-Chart -OutFile "charts\Testing-Export-Chart2.png" -Title "Sample Chart" -SubTitle "Randomly generated values over time"
     #>
     [CmdletBinding()]
     Param(
@@ -107,8 +107,7 @@ Function Export-Chart {
     )
     Begin {
         try {
-            # make sure OutFile path exists
-            Confirm-Path $OutFile
+            Write-Information "Export-Chart : Generating chart$(if($Title){" [$Title]"})"
             # determine the file extension and check against valid image formats
             if ($OutFile.LastIndexOf(".")) {
                 $imageFormat = $OutFile.Substring($OutFile.LastIndexOf(".") + 1)
@@ -123,14 +122,16 @@ Function Export-Chart {
                     "tif" {$imageFormat = "tiff"; break}
                     "tiff" {; break}
                     default {
-                        Write-Warning "OutFile is an unsupported image format: $imageFormat"
-                        Write-Warning "Supported formats are: BMP, EMF, GIF, JPG, PNG, TIF"
-                        Write-Warning "Fallback to PNG..."
+                        Write-Warning "Export-Chart : OutFile image format [$imageFormat] is not supported"
+                        Write-Warning "Export-Chart : Supported formats are [BMP, EMF, GIF, JPG, PNG, TIF]"
+                        Write-Warning "Export-Chart : Defaulting to PNG"
                         $imageFormat = "png"
                         $OutFile = $OutFile.Substring(0, $OutFile.LastIndexOf(".") + 1) + $imageFormat
                         break
                     }
                 }
+            } else {
+                throw "Could not determine file extension from [$OutFile]"
             }
             # define the color themes here
             $themes = @{
@@ -162,23 +163,6 @@ Function Export-Chart {
                     Series2AltMarker = "#EB6A14"
                 }
             }
-        } catch {
-            if (!$PSitem.InvocationInfo.MyCommand) {
-                $PSCmdlet.ThrowTerminatingError(
-                    [System.Management.Automation.ErrorRecord]::new(
-                        (New-Object "$($PSItem.Exception.GetType().FullName)" (
-                                "$($PSCmdlet.MyInvocation.MyCommand.Name) : $($PSItem.Exception.Message)`n`nStackTrace:`n$($PSItem.ScriptStackTrace)`n"
-                            )),
-                        $PSItem.FullyQualifiedErrorId,
-                        $PSItem.CategoryInfo.Category,
-                        $PSItem.TargetObject
-                    )
-                )
-            } else { $PSCmdlet.ThrowTerminatingError($PSitem) }
-        }
-    }
-    Process {
-        try {
             # create a chart object and define its properties
             $chart = New-object System.Windows.Forms.DataVisualization.Charting.Chart
             $chart.Width = $Width
@@ -186,12 +170,14 @@ Function Export-Chart {
             $chart.BackColor = $themes.default.Background
             # Title, if provided, will be in the top left
             if ($Title) {
+                Write-Information "Export-Chart : Detected Title [$Title]"
                 $chart.Titles.Add($Title) > $null
                 $chart.Titles[0].Font = [System.Drawing.Font]::new("Calibri", 13, [System.Drawing.FontStyle]::Bold)
                 $chart.Titles[0].ForeColor = $themes.default.Title
                 $chart.Titles[0].Alignment = [System.Drawing.ContentAlignment]::TopLeft
                 # SubTitle, if provided, will be in the top left also
                 if ($SubTitle) {
+                    Write-Information "Export-Chart : Detected SubTitle [$SubTitle]"
                     $chart.Titles.Add($SubTitle) > $null
                     $chart.Titles[1].Font = [System.Drawing.Font]::new("Calibri", 11, [System.Drawing.FontStyle]::Italic)
                     $chart.Titles[1].ForeColor = $themes.default.SubTitle
@@ -236,10 +222,28 @@ Function Export-Chart {
             # add the chart area and legend to the chart
             $chart.ChartAreas.Add($chartArea)
             $chart.Legends.Add($legend)
+        } catch {
+            if (!$PSitem.InvocationInfo.MyCommand) {
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        (New-Object "$($PSItem.Exception.GetType().FullName)" (
+                                "$($PSCmdlet.MyInvocation.MyCommand.Name) : $($PSItem.Exception.Message)`n`nStackTrace:`n$($PSItem.ScriptStackTrace)`n"
+                            )),
+                        $PSItem.FullyQualifiedErrorId,
+                        $PSItem.CategoryInfo.Category,
+                        $PSItem.TargetObject
+                    )
+                )
+            } else { $PSCmdlet.ThrowTerminatingError($PSitem) }
+        }
+    }
+    Process {
+        try {
             # define a variable to keep track of which series we're on, for theming purposes
             $seriesNum = 1
             # process all the series provided in Data
             foreach ($series in $Data) {
+                Write-Information "Export-Chart : Adding series [$($series.Name)]"
                 # if, while processing the first series, we determine that the X field will have non-numeric data,
                 # set the Interval to 1 so all items show in the chart
                 if ($seriesNum -eq 1 -and ($series.table."$($series.x)" | Select-Object -First 1).GetType().Name -eq "String") { $chartArea.AxisX.Interval = 1 }
@@ -270,6 +274,26 @@ Function Export-Chart {
                 # we currently only have 2 series color variants, so cap the iteration at 2
                 if ($seriesNum -lt 2) { $seriesNum++ }
             }
+        } catch {
+            if (!$PSitem.InvocationInfo.MyCommand) {
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        (New-Object "$($PSItem.Exception.GetType().FullName)" (
+                                "$($PSCmdlet.MyInvocation.MyCommand.Name) : $($PSItem.Exception.Message)`n`nStackTrace:`n$($PSItem.ScriptStackTrace)`n"
+                            )),
+                        $PSItem.FullyQualifiedErrorId,
+                        $PSItem.CategoryInfo.Category,
+                        $PSItem.TargetObject
+                    )
+                )
+            } else { $PSCmdlet.ThrowTerminatingError($PSitem) }
+        }
+    }
+    End {
+        try {
+            Write-Information "Export-Chart : Saving [$imageFormat] image as [$OutFile]"
+            # make sure OutFile path exists
+            Confirm-Path $OutFile
             # we're ready to save the chart as an image
             $chart.SaveImage($OutFile, $imageFormat)
         } catch {
