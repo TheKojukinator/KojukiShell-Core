@@ -13,7 +13,7 @@ Function Start-Script {
     .PARAMETER Log
         Path to log file.
 
-        Default: [script path]\_logs\[script name]\[user]@[computer]_[MM-dd-yyyy_hh-mm-ss].log
+        Default: [script path]\_logs\[script name]\[user]@[computer]_[MM-dd-yyyy_HH-mm-ss].log
     .EXAMPLE
         Start-Script
     #>
@@ -27,7 +27,7 @@ Function Start-Script {
         try {
             # stop any previous transcript, generate default log path if not provided, and start a new transcript to it
             try { Stop-Transcript *> $null } catch {}
-            if (!$Log) { $Log = "$((Get-ScriptFileInfo).DirectoryName)\_logs\$((Get-ScriptFileInfo).BaseName)\$($env:USERNAME)@$($env:COMPUTERNAME)_$(Get-Date -f MM-dd-yyyy_hh-mm-ss).log" }
+            if (!$Log) { $Log = "$((Get-ScriptFileInfo).DirectoryName)\_logs\$((Get-ScriptFileInfo).BaseName)\$($env:USERNAME)@$($env:COMPUTERNAME)_$(Get-Date -f MM-dd-yyyy_HH-mm-ss).log" }
             Start-Transcript -Path $Log -Append *> $null
 
             # init module-scoped script timer
