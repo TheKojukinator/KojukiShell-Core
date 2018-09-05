@@ -42,56 +42,46 @@ class ValidateChartDataAttribute : System.Management.Automation.ValidateArgument
 Function Export-Chart {
     <#
     .SYNOPSIS
-    Generate a chart and output it to an image file.
-
+        Generate a chart and output it to an image file.
     .DESCRIPTION
-    This function leverages [System.Windows.Forms.DataVisualization.Charting] to generate a chart based on the provided data set(s) which it then exports to an image file.
+        This function leverages [System.Windows.Forms.DataVisualization.Charting] to generate a chart based on the provided data set(s) which it then exports to an image file.
 
-    NOTE: Because series have several important properties, they are required to be provided as hashtables. Refer to the first parameter, Data, for more details.
-
+        NOTE: Because series have several important properties, they are required to be provided as hashtables. Refer to the first parameter, Data, for more details.
     .PARAMETER Data
-    Single, or multiple, hashtables representing data series and related properties.
+        Single, or multiple, hashtables representing data series and related properties.
 
-    Valid hashtable fields are as follows:
-        @{
-            table   : Required  : Must include a dataset, can be a collection of objects, or an array of values.
-            name    : Required  : String - the name of this series, it will be used on the chart key.
-            x       : Required  : String - the property name (of data in table) to use for the X axis.
-            y       : Required  : String - the property name (of data in table) to use for the Y axis.
-            labelx  : Optional  : String - the label for the X axis, if ommited the property name is used by default.
-            labely  : Optional  : String - the label for the Y axis, if ommited the property name is used by default.
-            quota   : Optional  : Int/Double - the value threshold for the Y axis, over whitch an alternate coloring will be used.
-        }
-
+        Valid hashtable fields are as follows:
+            @{
+                table   : Required  : Must include a dataset, can be a collection of objects, or an array of values.
+                name    : Required  : String - the name of this series, it will be used on the chart key.
+                x       : Required  : String - the property name (of data in table) to use for the X axis.
+                y       : Required  : String - the property name (of data in table) to use for the Y axis.
+                labelx  : Optional  : String - the label for the X axis, if ommited the property name is used by default.
+                labely  : Optional  : String - the label for the Y axis, if ommited the property name is used by default.
+                quota   : Optional  : Int/Double - the value threshold for the Y axis, over whitch an alternate coloring will be used.
+            }
     .PARAMETER OutFile
-    Output path and filename for the generated image file.
+        Output path and filename for the generated image file.
 
-    Supported formats:
-        bmp, emf, gif, jpg, png, tif
-
+        Supported formats:
+            bmp, emf, gif, jpg, png, tif
     .PARAMETER Title
-    Optional chart Title.
-
+        Optional chart Title.
     .PARAMETER SubTitle
-    Optional chart SubTitle.
-
+        Optional chart SubTitle.
     .PARAMETER Width
-    Overwrites default chart width.
-
+        Overwrites default chart width.
     .PARAMETER Height
-    Overwrites default chart height.
-
+        Overwrites default chart height.
     .PARAMETER Inputs
-    Data hashtable(s) can be provided via pipeline.
-
+        Data hashtable(s) can be provided via pipeline.
     .EXAMPLE
-    Export-Chart @{table = (Get-ChildItem C:\users\exa\Downloads -File | Select-Object Name, Length); name = "Sizes"; x = "Name"; y = "Length"; labelx = "File Name"; labely = "File Size"; quota = 60000000 } "charts\Testing-Export-Chart1.png" "Downloads" "Sizes of files in my Downloads folder" 1920 1080
-
+        Export-Chart @{table = (Get-ChildItem C:\users\exa\Downloads -File | Select-Object Name, Length); name = "Sizes"; x = "Name"; y = "Length"; labelx = "File Name"; labely = "File Size"; quota = 60000000 } "charts\Testing-Export-Chart1.png" "Downloads" "Sizes of files in my Downloads folder" 1920 1080
     .EXAMPLE
-    @{table = (0..10 | ForEach-Object {[pscustomobject]@{date = (get-date).AddDays($PSItem); value = $PSItem * (get-random -Minimum 0 -Maximum 1000)}}); name = "Generated1"; x = "date"; y = "value"; quota = 4000 }, @{table = (0..10 | ForEach-Object {[pscustomobject]@{date = (get-date).AddDays($PSItem); value = $PSItem * (get-random -Minimum 0 -Maximum 1000)}}); name = "Generated2"; x = "date"; y = "value"; quota = 4000 } | Export-Chart -OutFile "charts\Testing-Export-Chart2.png" -Title "Sample Chart" -SubTitle "Randomly generated values over time"
+        @{table = (0..10 | ForEach-Object {[pscustomobject]@{date = (get-date).AddDays($PSItem); value = $PSItem * (get-random -Minimum 0 -Maximum 1000)}}); name = "Generated1"; x = "date"; y = "value"; quota = 4000 }, @{table = (0..10 | ForEach-Object {[pscustomobject]@{date = (get-date).AddDays($PSItem); value = $PSItem * (get-random -Minimum 0 -Maximum 1000)}}); name = "Generated2"; x = "date"; y = "value"; quota = 4000 } | Export-Chart -OutFile "charts\Testing-Export-Chart2.png" -Title "Sample Chart" -SubTitle "Randomly generated values over time"
     #>
     [CmdletBinding()]
-    Param(
+    param(
         [Parameter(Mandatory, ValueFromPipeline)][ValidateChartData()]
         [hashtable[]] $Data,
         [Parameter(Mandatory)][ValidateNotNullOrEmpty()]
@@ -105,7 +95,7 @@ Function Export-Chart {
         [Parameter()][ValidateNotNullOrEmpty()]
         [int] $Height = 400
     )
-    Begin {
+    begin {
         try {
             Write-Information "Export-Chart : Generating chart$(if($Title){" [$Title]"})"
             # determine the file extension and check against valid image formats
@@ -237,7 +227,7 @@ Function Export-Chart {
             } else { $PSCmdlet.ThrowTerminatingError($PSitem) }
         }
     }
-    Process {
+    process {
         try {
             # define a variable to keep track of which series we're on, for theming purposes
             $seriesNum = 1
@@ -263,7 +253,6 @@ Function Export-Chart {
                 $chart.Series[$series.Name].MarkerSize = 8
                 # add the plot points by processing this series row by row
                 foreach ($row in $series.table) {
-                    # add the data point
                     $chart.Series[$series.Name].Points.AddXY($row."$($series.x)", $row."$($series.y)") *> $null
                     # if this series was provided with a quota, use the Alt colors for points above the quota
                     if ($series.quota -and $row."$($series.y)" -gt $series.quota) {
@@ -289,12 +278,10 @@ Function Export-Chart {
             } else { $PSCmdlet.ThrowTerminatingError($PSitem) }
         }
     }
-    End {
+    end {
         try {
             Write-Information "Export-Chart : Saving [$imageFormat] image as [$OutFile]"
-            # make sure OutFile path exists
             Confirm-Path $OutFile
-            # we're ready to save the chart as an image
             $chart.SaveImage($OutFile, $imageFormat)
         } catch {
             if (!$PSitem.InvocationInfo.MyCommand) {

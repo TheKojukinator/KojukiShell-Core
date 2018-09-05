@@ -1,62 +1,53 @@
 Function Use-SetACL {
     <#
     .SYNOPSIS
-    Wraps the SetACL tool from https://helgeklein.com
-
+        Wraps the SetACL tool from https://helgeklein.com
     .DESCRIPTION
-    This function performs ACL operations on a specified path or paths. The default operation is List, unless another switch is provided.
+        This function performs ACL operations on a specified path or paths. The default operation is List, unless another switch is provided.
 
-    It leverages the SetACL tool from https://helgeklein.com. If "SetACL.exe" is not found in "[script path]\tools\SetACL (executable version)\32 bit", the function will attempt to download it. If the download fails, the function will fail.
-
+        It leverages the SetACL tool from https://helgeklein.com. If "SetACL.exe" is not found in "[script path]\tools\SetACL (executable version)\32 bit", the function will attempt to download it. If the download fails, the function will fail.
     .PARAMETER Path
-    Path(s) to process.
-
+        Path(s) to process.
     .PARAMETER Type
-    Type of item to operate on, chosen from a validation set. Defaults to File.
-
+        Type of item to operate on, chosen from a validation set. Defaults to File.
     .PARAMETER Inherited
-    Show inherited permissions during the List operation.
-
+        Show inherited permissions during the List operation.
     .PARAMETER Nuke
-    Perform the Nuke operation, which gives (by default BUILTIN\Administrators) ownership, Full permissions, and resets inheritance on all children.
-
+        Perform the Nuke operation, which gives (by default BUILTIN\Administrators) ownership, Full permissions, and resets inheritance on all children.
     .PARAMETER User
-    Alternative (to BUILTIN\Administrators) User\Group to use during the Nuke operation.
-
+        Alternative (to BUILTIN\Administrators) User\Group to use during the Nuke operation.
     .INPUTS
-    Path(s) can be provided via pipeline.
-
+        Path(s) can be provided via pipeline.
     .EXAMPLE
-    Use-SetACL "c:\users"
-    Performing [List] on [File] object [c:\users]
-    c:\users
+        Use-SetACL "c:\users"
+        Performing [List] on [File] object [c:\users]
+        c:\users
 
-        Owner: NT AUTHORITY\SYSTEM
+            Owner: NT AUTHORITY\SYSTEM
 
-        Group: NT AUTHORITY\SYSTEM
+            Group: NT AUTHORITY\SYSTEM
 
-        DACL(protected+auto_inherited):
-        NT AUTHORITY\SYSTEM   full   allow   container_inherit+object_inherit
-        BUILTIN\Administrators   full   allow   container_inherit+object_inherit
-        BUILTIN\Users   read_execute   allow   no_inheritance
-        BUILTIN\Users   read_execute   allow   container_inherit+object_inherit+inherit_only
-        Everyone   read_execute   allow   no_inheritance
-        Everyone   read_execute   allow   container_inherit+object_inherit+inherit_only
+            DACL(protected+auto_inherited):
+            NT AUTHORITY\SYSTEM   full   allow   container_inherit+object_inherit
+            BUILTIN\Administrators   full   allow   container_inherit+object_inherit
+            BUILTIN\Users   read_execute   allow   no_inheritance
+            BUILTIN\Users   read_execute   allow   container_inherit+object_inherit+inherit_only
+            Everyone   read_execute   allow   no_inheritance
+            Everyone   read_execute   allow   container_inherit+object_inherit+inherit_only
 
-        SACL(not_protected+auto_inherited):
-        [empty]
+            SACL(not_protected+auto_inherited):
+            [empty]
 
-    SetACL finished successfully.
-
+        SetACL finished successfully.
     .EXAMPLE
-    Use-SetACL "C:\_TEST" -Nuke
-    Performing [Nuke] on [File] object [C:\_TEST]
-    Processing ACL of: <\\?\C:\_TEST>
+        Use-SetACL "C:\_TEST" -Nuke
+        Performing [Nuke] on [File] object [C:\_TEST]
+        Processing ACL of: <\\?\C:\_TEST>
 
-    SetACL finished successfully.
+        SetACL finished successfully.
     #>
     [CmdletBinding(DefaultParameterSetName = "List")]
-    Param(
+    param(
         [Parameter(Position = 0, Mandatory, ValueFromPipeline)]
         [ValidateNotNullorEmpty()]
         [string[]] $Path,
@@ -72,32 +63,24 @@ Function Use-SetACL {
         [ValidateNotNullorEmpty()]
         [string] $User = "S-1-5-32-544"
     )
-    Begin {
+    begin {
         try {
-            # this is the expected exe path
+            # check if the tool is present, if not, attempt to download it from the web
             $exe = "$((Get-ScriptFileInfo).DirectoryName)\tools\SetACL (executable version)\32 bit\SetACL.exe"
-            # if we can't locate the exe, attempt to get it from the web
             if (!(Test-Path $exe -ErrorAction Ignore)) {
                 Write-Information "Use-SetACL : [$exe] not found, attempting to download"
-                # make sure destination path exists
                 Confirm-Path "$((Get-ScriptFileInfo).DirectoryName)\tools"
-                # download SetACL
                 $dlFile = "$((Get-ScriptFileInfo).DirectoryName)\tools\SetACL (executable version).zip"
                 Invoke-WebRequest -Uri "https://helgeklein.com/downloads/SetACL/current/SetACL%20(executable%20version).zip" -OutFile $dlFile
-                # confirm downloaded file exists, otherwise throw error
                 if (!(Test-Path $dlFile -ErrorAction Ignore)) {
                     throw "[$exe] not found and fallback download failed!"
                 }
-                # extract SetACL
                 Expand-Archive -Path $dlFile -DestinationPath "$((Get-ScriptFileInfo).DirectoryName)\tools"
-                # delete the downloaded file
                 Remove-Item $dlFile -Force
-                # if we still can't locate the exe, all is lost
                 if (!(Test-Path $exe -ErrorAction Ignore)) {
                     throw "Can't find [$exe]"
                 }
             }
-            # if we made it here, the SetACL exe has been located
             Write-Information "Use-SetACL : Using [$exe]"
         } catch {
             if (!$PSitem.InvocationInfo.MyCommand) {
@@ -114,9 +97,8 @@ Function Use-SetACL {
             } else { $PSCmdlet.ThrowTerminatingError($PSitem) }
         }
     }
-    Process {
+    process {
         try {
-            # handle single items or arrays
             foreach ($item in $Path) {
                 # validate each item with Test-Path, provide warning if not found, otherwise process
                 if (!(Test-Path $item -ErrorAction SilentlyContinue)) {

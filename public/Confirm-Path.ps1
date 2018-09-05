@@ -1,72 +1,55 @@
 Function Confirm-Path {
     <#
     .SYNOPSIS
-    Enforce path existence.
-
+        Enforce path existence.
     .DESCRIPTION
-    This function checks if the specified path(s) exist(s), and creates it/them if necessary.
-
+        This function checks if the specified path(s) exist(s), and creates it/them if necessary.
     .PARAMETER Path
-    Path(s) to confirm.
-
+        Path(s) to confirm.
     .PARAMETER PassThru
-    Puts the path(s) back on the pipeline.
-
+        Puts the path(s) back on the pipeline.
     .INPUTS
-    Path(s) can be provided via pipeline.
-
+        Path(s) can be provided via pipeline.
     .OUTPUTS
-    [System.IO.Directory] or [System.IO.DirectoryInfo] if using PassThru switch.
-
+        [System.IO.Directory] or [System.IO.DirectoryInfo] if using PassThru switch.
     .EXAMPLE
-    Confirm-Path "testPath"
-
+        Confirm-Path "testPath"
     .EXAMPLE
-    Confirm-Path "testPath" -PassThru
-    Mode                LastWriteTime         Length Name
-    ----                -------------         ------ ----
-    d-----        7/16/2018   8:27 AM                test
-
+        Confirm-Path "testPath" -PassThru
+        Mode                LastWriteTime         Length Name
+        ----                -------------         ------ ----
+        d-----        7/16/2018   8:27 AM                test
     .EXAMPLE
-    "testPath1", "testPath2" | Confirm-Path
-
+        "testPath1", "testPath2" | Confirm-Path
     .EXAMPLE
-    "testPath1", "testPath2" | Confirm-Path -PassThru
-    Mode                LastWriteTime         Length Name
-    ----                -------------         ------ ----
-    d-----        7/16/2018   8:29 AM                testPath1
-    d-----        7/16/2018   8:29 AM                testPath2
+        "testPath1", "testPath2" | Confirm-Path -PassThru
+        Mode                LastWriteTime         Length Name
+        ----                -------------         ------ ----
+        d-----        7/16/2018   8:29 AM                testPath1
+        d-----        7/16/2018   8:29 AM                testPath2
     #>
     [CmdletBinding(DefaultParameterSetName = "Default")]
     [OutputType([System.IO.Directory], [System.IO.DirectoryInfo], ParameterSetName = "PassThru")]
-    Param(
+    param(
         [Parameter(Position = 0, Mandatory, ValueFromPipeline)]
         [ValidateNotNullOrEmpty()]
         [string[]] $Path,
         [Parameter(ParameterSetName = "PassThru")]
         [switch] $PassThru
     )
-    Process {
+    process {
         try {
-            # handle single items or arrays
             foreach ($item in $Path) {
-                # resolve the path if it is relative
-                $item = Resolve-RelativePath $item
+                $item = Get-AbsolutePath $item
                 # if there is no extension, we must treat this item as a directory
                 if ([String]::IsNullOrEmpty((New-Object IO.FileInfo $item).Extension)) {
-                    # create a directory object
                     $dir = New-Object IO.DirectoryInfo $item
-                    # if the directory exists
                     if ($dir.Exists) {
                         Write-Information "Confirm-Path : Directory [$($dir.FullName)] exists"
-                        # pipeline it for PassThru
                         if ($PassThru) { $dir }
-                        # if the directory doesn't exist
                     } else {
                         Write-Information "Confirm-Path : Directory [$($dir.FullName)] doesn't exist, creating"
-                        # attempt to create it
                         $newDir = New-Item -Type Directory -Path $dir.FullName
-                        # pipeline it for PassThru if test succeeds
                         if (Test-Path($newDir)) {
                             Write-Information "Confirm-Path : Success!"
                             if ($PassThru) { $newDir }
@@ -74,26 +57,18 @@ Function Confirm-Path {
                             throw "Failed to create directory [$($dir.FullName)]"
                         }
                     }
-                    # if there is an extension, we must treat this item as a file
                 } else {
-                    # create a file object
+                    # if there is an extension, we must treat this item as a file
                     $file = New-Object IO.FileInfo $item
-                    # if the file exists
                     if ($file.Exists) {
                         Write-Information "Confirm-Path : File [$($file.FullName)] exists"
-                        # pipeline the directory for PassThru
                         if ($PassThru) { $file.Directory }
-                        # if the file doesn't exist, but the directory exists
                     } elseif ($file.Directory.Exists) {
                         Write-Information "Confirm-Path : Directory [$($file.DirectoryName)] exists"
-                        # pipeline the directory for PassThru
                         if ($PassThru) { $file.Directory }
-                        # if neither exists
                     } else {
                         Write-Information "Confirm-Path : Directory [$($file.DirectoryName)] doesn't exist, creating"
-                        # attempt to create the directory
                         $newDir = New-Item -Type Directory -Path $file.DirectoryName
-                        # pipeline it for PassThru if test succeeds
                         if (Test-Path($newDir)) {
                             Write-Information "Confirm-Path : Success!"
                             if ($PassThru) { $newDir }

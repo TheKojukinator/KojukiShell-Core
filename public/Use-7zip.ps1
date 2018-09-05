@@ -1,30 +1,24 @@
 Function Use-7zip {
     <#
     .SYNOPSIS
-    Wraps 7-zip.
-
+        Wraps 7-zip.
     .DESCRIPTION
-    This function, in its current state, leverages 7-zip to extract archives. It's a useful alternative to Expand-Archive because it supports more than just the Zip format.
+        This function, in its current state, leverages 7-zip to extract archives. It's a useful alternative to Expand-Archive because it supports more than just the Zip format.
 
-    7-zip must be installed on the machine executing this function. If "7z.exe" is not found in "HKLM:\SOFTWARE\7-Zip\Path" the function will fail.
-
+        7-zip must be installed on the machine executing this function. If "7z.exe" is not found in "HKLM:\SOFTWARE\7-Zip\Path" the function will fail.
     .PARAMETER Archive
-    Path(s) to the archive(s) to process.
-
+        Path(s) to the archive(s) to process.
     .PARAMETER Path
-    Output path for the Extract operation. Archives will extract in to their own subfolders.
-
+        Output path for the Extract operation. Archives will extract in to their own subfolders.
     .INPUTS
-    Archive(s) can be provided via pipeline.
-
+        Archive(s) can be provided via pipeline.
     .EXAMPLE
-    Use-7zip "DriverPackCatalog.cab" "c:\extracted"
-
+        Use-7zip "DriverPackCatalog.cab" "c:\extracted"
     .EXAMPLE
-    "DriverPackCatalog.cab", "c:\users\testUser\Downloads\archive.zip" | Use-7zip -Path "c:\extracted"
+        "DriverPackCatalog.cab", "c:\users\testUser\Downloads\archive.zip" | Use-7zip -Path "c:\extracted"
     #>
     [CmdletBinding(DefaultParameterSetName = "Extract")]
-    Param(
+    param(
         [Parameter(Position = 0, Mandatory, ValueFromPipeline)]
         [ValidateNotNullOrEmpty()]
         [string[]] $Archive,
@@ -32,22 +26,18 @@ Function Use-7zip {
         [ValidateNotNullOrEmpty()]
         [string] $Path
     )
-    Begin {
+    begin {
         try {
-            # construct path from 7-Zip reg key and expected executable name 7z.exe
+            # check if the tool is present via registry
             $exe = "$(Get-ItemPropertyValue "HKLM:\SOFTWARE\7-Zip" "Path" -ErrorAction SilentlyContinue)7z.exe"
-            # check if registry value was retrieved
             if ($exe -eq $null) {
                 throw "[HKLM:\SOFTWARE\7-Zip] could not be read, is 7-Zip installed on this machine?"
             }
-            # if the tool is not located, provide feedback and throw error
             if (!(Test-Path $exe -ErrorAction SilentlyContinue)) {
                 throw "Can't find [$exe]"
             } else {
                 Write-Information "Use-7zip : Using [$exe]"
             }
-            # resolve the path if it is relative
-            $Path = Resolve-RelativePath $Path
             # make sure output path exists
             Confirm-Path $Path
         } catch {
@@ -65,12 +55,10 @@ Function Use-7zip {
             } else { $PSCmdlet.ThrowTerminatingError($PSitem) }
         }
     }
-    Process {
+    process {
         try {
-            # handle single items or arrays
             foreach ($item in $Archive) {
-                # resolve the path if it is relative
-                $item = Resolve-RelativePath $item
+                $item = Get-AbsolutePath $item
                 Write-Information "Use-7zip : Extracting [$item]"
                 # call 7zip to extract and save output
                 $stdout = & $exe "x" "$item" "-o$Path" "-y" "-bse2"
@@ -94,7 +82,6 @@ Function Use-7zip {
                     $obj.add("Output", $Path)
                     # convert the hash to an object
                     $obj = [pscustomobject]$obj
-                    # output the object verbose
                     Write-Information "Use-7zip : Extraction successful$($obj | Out-String)"
                 } else {
                     Write-Warning "Use-7zip : Warning extracting [$item]`n$($obj | Out-String)"

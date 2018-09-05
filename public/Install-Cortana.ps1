@@ -1,28 +1,24 @@
 Function Install-Cortana {
     <#
     .SYNOPSIS
-    Install Cortana.
-
+        Install Cortana.
     .DESCRIPTION
-    This function installs the latest Cortana AppXPackage available on this system.
-
+        This function installs the latest Cortana AppXPackage available on this system.
     .EXAMPLE
-    Install-Cortana
+        Install-Cortana
     #>
     [CmdletBinding()]
-    Param()
-    Process {
+    param()
+    process {
         try {
-            # select the latest available Cortana AppXPackage version
+            # select the latest available Cortana AppXPackage, by version
             $package = Get-AppXPackage -AllUsers -Name Microsoft.Windows.Cortana | Sort-Object @{e = {[System.Version]$PSItem.Version}} | Select-Object -Last 1
-            # if we found a package, try to install it
             if ($package) {
                 Write-Information "Install-Cortana : AppXPackage found, trying to install"
-                # start a loop for retries
                 while ($true) {
                     try {
                         Stop-Process -Name SearchUI -ErrorAction Ignore
-                        Add-AppxPackage -DisableDevelopmentMode -Register "$($package.InstallLocation)\AppXManifest.xml" -ErrorAction Stop
+                        Add-AppxPackage -DisableDevelopmentMode -Register "$($package.InstallLocation)\AppXManifest.xml"
                         break
                     } catch {
                         Write-Error $PSitem.Exception
@@ -31,7 +27,6 @@ Function Install-Cortana {
                     }
                 }
             } else {
-                # no package was found
                 Write-Warning "Install-Cortana : No AppXPackage found for Cortana!"
             }
         } catch {
@@ -49,14 +44,12 @@ Function Install-Cortana {
             } else { $PSCmdlet.ThrowTerminatingError($PSitem) }
         }
     }
-    End {
+    end {
         try {
             Write-Information "Install-Cortana : Restarting Explorer"
-            # restart explorer
             Stop-Process -Name explorer -Force -ErrorAction Ignore
             Start-Sleep -Seconds 1
             if (!(Get-Process | Where-Object ProcessName -EQ "explorer")) {
-                # if explorer didnt restart on its own, run it
                 & explorer.exe
             }
         } catch {

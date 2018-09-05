@@ -1,29 +1,24 @@
 Function New-Function {
     <#
     .SYNOPSIS
-    ...
-
+        ...
     .DESCRIPTION
-    ...
-
+        ...
     .PARAMETER SomeParam
-    ...
-
+        ...
     .INPUTS
-    ...
-
+        ...
     .OUTPUTS
-    ...
-
+        ...
     .EXAMPLE
-    ...
+        ...
     #>
     [CmdletBinding()]
-    Param(
+    param(
         [Parameter(Position = 0, Mandatory, ValueFromPipeline)]
         [string] $SomeParam
     )
-    Begin {
+    begin {
         try {
             #...
         } catch {
@@ -41,7 +36,7 @@ Function New-Function {
             } else { $PSCmdlet.ThrowTerminatingError($PSitem) }
         }
     }
-    Process {
+    process {
         try {
             #...
         } catch {
@@ -59,7 +54,7 @@ Function New-Function {
             } else { $PSCmdlet.ThrowTerminatingError($PSitem) }
         }
     }
-    End {
+    end {
         try {
             #...
         } catch {
